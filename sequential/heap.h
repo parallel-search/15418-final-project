@@ -2,7 +2,7 @@
 
 template <typename T>
 struct element {
-  int priority;
+  double priority;
   T* value;
 };
 
@@ -22,7 +22,7 @@ heap<T>* new_heap(int size=16) {
 }
 
 template <typename T>
-void push_heap(heap<T>* pq, T* value, int priority) {
+void push_heap(heap<T>* pq, T* value, double priority) {
   // Resize vector
   if (pq->size == pq->num_elements) {
     int new_size = pq->size * 2;

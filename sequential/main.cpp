@@ -3,12 +3,12 @@
 void print_heap(heap<int>* pq) {
   printf("pq: ");
   for (int i = 0; i < pq->num_elements; ++i) {
-    printf("%d, ", pq->data[i].priority);
+    printf("%d, ", *(pq->data[i].value));
   }
   printf("\n");
 }
 
-int main() {
+void test1() {
   heap<int>* a = new_heap<int>(2);
   int ints[] = {0,1,2,3,4,5,6,7,8,9};
   print_heap(a);
@@ -58,5 +58,9 @@ int main() {
   print_heap(a);
   pop_heap(a);
   print_heap(a);
+}
+
+int main() {
+  test1();
   return 0;
 }
