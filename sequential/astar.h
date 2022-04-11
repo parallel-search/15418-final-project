@@ -1,4 +1,4 @@
-//#include "heap.h"
+#include "heap.h"
 
 #include<iostream>
 #include<limits>
