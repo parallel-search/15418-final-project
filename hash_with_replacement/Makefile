@@ -5,4 +5,4 @@ APP_NAME=hash
 OBJDIR=objs
 
 default:
-		$(CXX) $(CXXFLAGS) -o $(APP_NAME) *.cpp
+		$(CXX) $(CXXFLAGS) -o $(APP_NAME) *.cpp *.h
