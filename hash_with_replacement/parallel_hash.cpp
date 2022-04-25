@@ -3,35 +3,15 @@
 int main() {
     HashTable *hash_table = create_hash_table(20);
 
-    Node node1 = {
-        0,
-        10,
-        10
-    };
+    Node node1 = Node(0, 10, 10);
 
-    Node node2 = {
-        1,
-        9,
-        5
-    };
+    Node node2 = Node(1, 9, 5);
 
-    Node node3 = {
-        2,
-        3,
-        6
-    };
+    Node node3 = Node(2, 3, 6);
 
-    Node node4 = {
-        2,
-        2,
-        10
-    };
+    Node node4 = Node(2, 2, 10);
 
-    Node node5 = {
-        1,
-        15,
-        6
-    };
+    Node node5 = Node(1, 15, 6);
 
     Node node_list1 [] = {node1, node2, node3};
     int num_elems1 = 3;

@@ -102,7 +102,7 @@ std::vector<int> parallel_astar(
 
     // Initialize data structures
     push_heap(open_set[0], start, f(start));
-    Node begin = {start, 0, f(start)};
+    Node begin = Node(start, 0, f(start));
     Node init_node_list[] = {begin};
     insert_deduplicate(hash_table, init_node_list, 1);
 
@@ -132,10 +132,10 @@ std::vector<int> parallel_astar(
                 continue;
             }
 
-            for (link<T> neighbor : get_next(node)) {
-                // assert query(closed_set, node) != -1;
-                int cost = query(closed_set, node) + neighbor.cost;
-                Node new_node = {neighbor.node, cost, f(neighbor.node)};
+            for (link<int> neighbor : get_next(node)) {
+                // assert query(closed_set, node).g != -1;
+                int cost = query(closed_set, node).g + neighbor.cost;
+                Node new_node = Node(neighbor.node, node, cost, f(neighbor.node));
                 S.push_back(new_node);
             }
         }
@@ -158,7 +158,16 @@ std::vector<int> parallel_astar(
 
             if (all_less) {
                 // return path to goal
-                // do this by adding a prev node on Node struct.
+                std::vector<int> backtrack_path;
+                int curr = m;
+                while (curr != start) {
+                    backtrack_path.push_back(curr);
+                    curr = query(closed_set, curr).prev;
+                }
+                backtrack_path.push_back(start);
+
+                std::reverse(backtrack_path.begin(), backtrack_path.end());
+                return backtrack_path;
             }
         }
 

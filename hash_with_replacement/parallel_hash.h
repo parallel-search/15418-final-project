@@ -4,8 +4,18 @@
 
 struct Node {
     int id;
+    int prev_id;
     int g;
     int f;
+    Node(int id, int g, int f) {
+        Node(id, id, g, f);
+    }
+    Node(int id, int prev_id, int g, int f) {
+        this->id = id;
+        this->prev_id = prev_id;
+        this->g = g;
+        this->f = f;
+    }
 };
 
 struct HashTable {
@@ -30,11 +40,7 @@ HashTable *create_hash_table(int size) {
     hash_table->num_elems = 0;
     hash_table->table = (Node *) malloc(sizeof(Node) * size);
     for (int i = 0; i < size; i++) {
-        hash_table->table[i] = {
-            -1,
-            -1,
-            -1
-        };
+        hash_table->table[i] = Node(-1, -1, -1);
     }
     return hash_table;
 }
@@ -131,17 +137,17 @@ bool query_cost_check(HashTable *hash_table, Node node) {
     return flag1 && flag2;
 }
 
-// returns g
-int query(HashTable *hash_table, int id) {
+// returns Node corresponding to id
+Node query(HashTable *hash_table, int id) {
     int ind0 = hash_fn1(id, hash_table->size);
     int ind1 = hash_fn2(id, hash_table->size);
 
     if (hash_table->table[ind0].id == id) {
-        return hash_table->table[ind0].g;
+        return hash_table->table[ind0];
     } else if (hash_table->table[ind1].id == id) {
-        return hash_table->table[ind1].g;
+        return hash_table->table[ind1];
     } else {
         // indicate node does not exist
-        return -1;
+        return Node(-1, -1, -1);
     }
 }
