@@ -52,7 +52,7 @@ int main() {
     int num_left = num_elems2;
     for (int i = 0; i < num_elems2; i++) {
         printf("id: %d\t g: %d\t f: %d\n", node_list2[i].id, node_list2[i].g, node_list2[i].f);
-        query_mask[i] = query(hash_table, node_list2[i]);
+        query_mask[i] = query_cost_check(hash_table, node_list2[i]);
         if (!query_mask[i]) {
             num_left--;
         }

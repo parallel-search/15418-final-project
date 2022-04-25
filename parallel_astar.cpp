@@ -80,3 +80,117 @@ std::vector<T> astar(
 
     return {};
 }
+
+std::vector<int> parallel_astar(
+    int start,
+    bool (*is_goal)(int),
+    std::vector<link<int>> (*get_next)(int),
+    int (*f)(int), // f is not heuristic -- it is heuristic + g
+    int num_queues
+) {
+    if (num_queues < 1) {
+        throw "We need at least one priority queue";
+    }
+    // Priority queue based on cost plus heuristic
+    std::vector<heap<int>*> open_set (num_queues);
+    for (int i = 0; i < num_queues; i++) {
+        open_set[i] = new_heap<int>();
+    }
+
+    // Hashmap for explored vertices (hashmap size should be dependent on number of nodes)
+    HashTable *closed_set = create_hash_table(20);
+
+    // Initialize data structures
+    push_heap(open_set[0], start, f(start));
+    Node begin = {start, 0, f(start)};
+    Node init_node_list[] = {begin};
+    insert_deduplicate(hash_table, init_node_list, 1);
+
+    int m = -1;
+
+    // If all queues are empty, then failed to find goal state
+    bool all_empty = false;
+    // we can parallelize this
+    for (int i = 0; i < num_queues; i++) {
+        all_empty = all_empty || is_empty_heap(open_set[i]);
+    }
+
+    while (!all_empty) {
+        std::vector<Node> S;
+
+        // for loop in parallel
+        for (int i = 0; i < num_queues; i++) {
+            if (is_empty_heap(open_set)) continue;
+
+            element<T>* q = peak_heap(open_set[i]);
+            pop_heap(open_set[i]);
+            int node = q->value;
+            if (is_goal(node)) {
+                if (m == -1 || f(node) < f(m)) {
+                    m = node;
+                }
+                continue;
+            }
+
+            for (link<T> neighbor : get_next(node)) {
+                // assert query(closed_set, node) != -1;
+                int cost = query(closed_set, node) + neighbor.cost;
+                Node new_node = {neighbor.node, cost, f(neighbor.node)};
+                S.push_back(new_node);
+            }
+        }
+
+
+        // return best path if goal is found and there is no
+        // element in any of the pq's that are less than current
+        // path to goal.
+        if (m != -1) {
+            bool all_less = true;
+            for (int i = 0; i < num_queues; i++) {
+                if (is_empty_heap(open_set[i])) continue;
+
+                int min_cost = peak_heap(open_set[i]).priority;
+                if (f(m) < min_cost) {
+                    all_less = false;
+                    break;
+                }
+            }
+
+            if (all_less) {
+                // return path to goal
+                // do this by adding a prev node on Node struct.
+            }
+        }
+
+        // deduplication section
+        bool query_mask[S.size()];
+        int num_left = S.size();
+        // run in parallel
+        for (int i = 0; i < S.size(); i++) {
+            query_mask[i] = query_cost_check(open_set, S[i]);
+            if (!query_mask[i]) num_left--;
+        }
+
+        Node T[num_left];
+        int j = 0;
+        for (int i = 0; i < S.size(); i++) {
+            if (query_mask[i]) {
+                T[j] = S[i];
+                j++;
+            }
+        }
+
+
+        // insert the remaining nodes in parallel in closed array
+        // and priority queues.
+        insert_deduplicate(closed_set, T, num_left, &open_set);
+
+        bool all_empty = false;
+        // we can parallelize this
+        for (int i = 0; i < num_queues; i++) {
+            all_empty = all_empty || is_empty_heap(open_set[i]);
+        }
+    }
+
+    return {};
+}

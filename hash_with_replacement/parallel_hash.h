@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdlib>
+#include "heap.h"
 
 struct Node {
     int id;
@@ -39,7 +40,7 @@ HashTable *create_hash_table(int size) {
 }
 
 // num_nodes is size of node_list
-Node* insert_deduplicate(HashTable *hash_table, Node *node_list, int num_nodes) {
+Node* insert_deduplicate(HashTable *hash_table, Node *node_list, int num_nodes, std::vector<heap<int>*> &open_set) {
     // dedup_list_mask indicates which indices in node_list have been deduped
     // initially all are valid
     int *dedup_list_mask = (int *) malloc(sizeof(int) * num_nodes);
@@ -50,6 +51,10 @@ Node* insert_deduplicate(HashTable *hash_table, Node *node_list, int num_nodes) 
 
     // run for loop in parallel
     for (int i = 0; i < num_nodes; i++) {
+        // insert in random priority queue
+        int ind = rand() % open_set.size();
+        push_heap(open_set[ind], node_list[i].id, node_list[i].f);
+
         // check for unoccupied slots with different hash functions
         int z = 0;
 
@@ -108,7 +113,7 @@ Node* insert_deduplicate(HashTable *hash_table, Node *node_list, int num_nodes) 
 // check if node exists in hash table and if it beats lowest g value
 // true if this node should be kept for insertion (i.e. either it's not in the table or new node's g is lower)
 // false otherwise (i.e. node is in the table and new node's g is higher)
-bool query(HashTable *hash_table, Node node) {
+bool query_cost_check(HashTable *hash_table, Node node) {
     int ind0 = hash_fn1(node.id, hash_table->size);
     int ind1 = hash_fn2(node.id, hash_table->size);
 
@@ -124,4 +129,19 @@ bool query(HashTable *hash_table, Node node) {
     }
 
     return flag1 && flag2;
+}
+
+// returns g
+int query(HashTable *hash_table, int id) {
+    int ind0 = hash_fn1(id, hash_table->size);
+    int ind1 = hash_fn2(id, hash_table->size);
+
+    if (hash_table->table[ind0].id == id) {
+        return hash_table->table[ind0].g;
+    } else if (hash_table->table[ind1].id == id) {
+        return hash_table->table[ind1].g;
+    } else {
+        // indicate node does not exist
+        return -1;
+    }
 }
