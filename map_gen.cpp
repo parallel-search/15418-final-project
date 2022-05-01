@@ -146,5 +146,24 @@ int main(int argc, char *argv[]) {
   int num_edges = atoi(argv[4]);
   int max_weight = atoi(argv[5]);
   int seed = atoi(argv[6]);
-  gen_map(max_width, max_height, num_pts, num_edges, max_weight, seed);
+  map_t map = gen_map(
+      max_width,
+      max_height,
+      num_pts,
+      num_edges,
+      max_weight,
+      seed
+  );
+  std::printf("%d %d\n", map.config.max_width, map.config.max_height);
+  std::printf("%lu\n", map.points.size());
+  for (point& pt : map.points) {
+      std::printf("%d %d\n", pt.x, pt.y);
+  }
+  std::printf("%d %d\n", map.start_idx, map.end_idx);
+  for (std::vector<edge>& edges : map.connections) {
+      std::printf("%lu\n", edges.size());
+      for (edge& conn : edges) {
+          std::printf("%d %d\n", conn.to, conn.weight);
+      }
+  }
 }
