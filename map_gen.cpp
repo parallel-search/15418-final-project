@@ -42,7 +42,7 @@ map_t gen_map(
     const uint64_t weight_config = big_rand() % total_weight_configurations;
 
     const unsigned int start = start_end / (num_pts - 1);
-    const unsigned int tmp_end = start_end % num_pts;
+    const unsigned int tmp_end = start_end % (num_pts - 1);
     const unsigned int end = tmp_end >= start ? tmp_end + 1 : tmp_end;
 
     unsigned int tmp_points[num_pts];
