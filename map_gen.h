@@ -1,11 +1,16 @@
 #include "utility.h"
 
-#include<set>
-#include<stdexcept>
-#include<vector>
+#include <set>
+#include <stdexcept>
+#include <vector>
 
 struct point {
     int x, y;
+};
+
+struct edge {
+    int to;
+    int weight;
 };
 
 typedef struct map_config {
@@ -15,7 +20,7 @@ typedef struct map_config {
 typedef struct map {
     map_config_t config;
     std::vector<point> points; 
-    std::vector<std::vector<int>> connections;
+    std::vector<std::vector<edge>> connections;
     int start_idx, end_idx;
 } map_t;
 
@@ -27,4 +32,3 @@ map_t gen_map(
     int max_weight,
     int seed
 );
-
