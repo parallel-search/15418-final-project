@@ -27,14 +27,13 @@ map_t gen_map(
     const uint64_t total_pt_configurations = ncr(total_pt_locations, num_pts);
     const uint64_t total_start_goal_configurations = npr(num_pts, 2);
     const uint64_t mst_configs = factorial(num_pts);
+    const uint64_t total_edges = ncr(num_pts, 2);
     const uint64_t total_edge_configurations = ncr(
-        ncr(num_pts, 2) - (num_pts - 1),
+        total_edges - (num_pts - 1),
         num_edges - (num_pts - 1)
     );
     const uint64_t total_weight_configurations = pow(max_weight, num_pts);
     srand(seed);
-
-std::printf("start\n");
 
     const uint64_t pt_config = big_rand() % total_pt_configurations;
     const uint64_t start_end = big_rand() % total_start_goal_configurations;
@@ -46,16 +45,12 @@ std::printf("start\n");
     const unsigned int tmp_end = start_end % num_pts;
     const unsigned int end = tmp_end >= start ? tmp_end + 1 : tmp_end;
 
-std::printf("configs done\n");
-
     unsigned int tmp_points[num_pts];
     std::vector<unsigned int> indices;
     for (unsigned int i = 0; i < num_pts; ++i) {
         tmp_points[i] = num_pts - i - 1;
         indices.push_back(i);
     }
-
-std::printf("points start\n");
 
     for (uint64_t i = 0; i < pt_config; ++i) {
         unsigned int moving = 0;
@@ -66,13 +61,10 @@ std::printf("points start\n");
             tmp_points[j - 1] = tmp_points[j] + 1;
         }
     }
-std::printf("points calc\n");
     std::vector<point> points;
     for (unsigned int& point : tmp_points) {
         points.push_back({ .x=point%max_width, .y=point/max_width });
     }
-
-std::printf("points done\n");
 
     std::set<std::pair<unsigned int, unsigned int>> all_edges;
     for (unsigned int from = 0; from < num_pts; ++from) {
@@ -81,14 +73,13 @@ std::printf("points done\n");
         }
     }
 
-std::printf("all edges done\n");
-
-    std::vector<std::vector<edge>> connections;
+    std::vector<std::vector<edge>> connections(num_pts);
     uint64_t tmp_weight_config = weight_config;
     uint64_t tmp_mst_config = mst_config;
     unsigned int tmp_on = tmp_mst_config % num_pts;
+    tmp_mst_config /= num_pts;
     indices.erase(indices.begin()+tmp_on);
-    for (unsigned int i = num_pts - 1; i >= 0; --i) {
+    for (unsigned int i = num_pts - 1; i > 0; --i) {
         unsigned int path = tmp_mst_config % i;
         unsigned int weight = tmp_weight_config % max_weight;
         unsigned int v = indices[path];
@@ -101,29 +92,24 @@ std::printf("all edges done\n");
         tmp_weight_config /= max_weight;
     }
 
-std::printf("mst done\n");
-
     unsigned int tmp_edges[num_edges - num_pts + 1];
-    for (unsigned int i = 0; i < num_edges; ++i) {
+    for (unsigned int i = 0; i < num_edges - num_pts + 1; ++i) {
         tmp_edges[i] = num_edges - i - 1;
     }
 
-std::printf("edges start\n");
-
     for (uint64_t i = 0; i < edge_config; ++i) {
         unsigned int moving = 0;
-        while (++tmp_edges[moving] >= num_edges - num_pts + 1 - moving) {
+        while (++tmp_edges[moving] >= total_edges - num_pts + 1 - moving) {
             moving++;
         }
         for (unsigned int j = moving; j > 0; --j) {
             tmp_edges[j - 1] = tmp_edges[j] + 1;
         }
     }
-std::printf("edges calc\n");
     std::set<std::pair<unsigned int, unsigned int>>::iterator it
         = all_edges.begin();
     unsigned int tmp_prev = 0;
-    for (int i = num_edges - 1; i >= 0; --i) {
+    for (int i = num_edges - num_pts; i >= 0; --i) {
         unsigned int weight = tmp_weight_config % max_weight;
         for (unsigned int j = 0; j < tmp_edges[i] - tmp_prev; ++j) {
             it++;
@@ -135,8 +121,6 @@ std::printf("edges calc\n");
         connections[v2].push_back({.to=v1, .weight=weight});
         tmp_weight_config /= max_weight;
     }
-
-std::printf("edges done\n");
 
     map_t map = {
         .config={
