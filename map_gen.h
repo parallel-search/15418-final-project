@@ -4,31 +4,32 @@
 #include <stdexcept>
 #include <vector>
 
+// Q1
 struct point {
-    int x, y;
+    unsigned int x, y;
 };
 
 struct edge {
-    int to;
-    int weight;
+    unsigned int to;
+    unsigned int weight;
 };
 
 typedef struct map_config {
-    int max_width, max_height;
+    unsigned int max_width, max_height;
 } map_config_t;
 
 typedef struct map {
     map_config_t config;
     std::vector<point> points; 
     std::vector<std::vector<edge>> connections;
-    int start_idx, end_idx;
+    unsigned int start_idx, end_idx;
 } map_t;
 
 map_t gen_map(
-    int max_width,
-    int max_height,
-    int num_pts,
-    int max_edges_per_pt,
-    int max_weight,
-    int seed
+    unsigned int max_width,
+    unsigned int max_height,
+    unsigned int num_pts,
+    unsigned int num_edges,
+    unsigned int max_weight,
+    unsigned int seed
 );
