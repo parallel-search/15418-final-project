@@ -45,22 +45,14 @@ map_t gen_map(
     const unsigned int tmp_end = start_end % (num_pts - 1);
     const unsigned int end = tmp_end >= start ? tmp_end + 1 : tmp_end;
 
-    unsigned int tmp_points[num_pts];
     std::vector<unsigned int> indices;
     for (unsigned int i = 0; i < num_pts; ++i) {
-        tmp_points[i] = num_pts - i - 1;
         indices.push_back(i);
     }
 
-    for (uint64_t i = 0; i < pt_config; ++i) {
-        unsigned int moving = 0;
-        while (++tmp_points[moving] >= max_width * max_height - moving) {
-            moving++;
-        }
-        for (int j = moving; j > 0; --j) {
-            tmp_points[j - 1] = tmp_points[j] + 1;
-        }
-    }
+    unsigned int tmp_points[num_pts];
+    kth_ncr(tmp_points, max_width * max_height, num_pts, pt_config);
+
     std::vector<point> points;
     for (unsigned int& point : tmp_points) {
         points.push_back({ .x=point%max_width, .y=point/max_width });
@@ -93,19 +85,13 @@ map_t gen_map(
     }
 
     unsigned int tmp_edges[num_edges - num_pts + 1];
-    for (unsigned int i = 0; i < num_edges - num_pts + 1; ++i) {
-        tmp_edges[i] = num_edges - i - 1;
-    }
+    kth_ncr(
+        tmp_edges,
+        total_edges - num_pts + 1,
+        num_edges - num_pts + 1,
+        edge_config
+    );
 
-    for (uint64_t i = 0; i < edge_config; ++i) {
-        unsigned int moving = 0;
-        while (++tmp_edges[moving] >= total_edges - num_pts + 1 - moving) {
-            moving++;
-        }
-        for (unsigned int j = moving; j > 0; --j) {
-            tmp_edges[j - 1] = tmp_edges[j] + 1;
-        }
-    }
     std::set<std::pair<unsigned int, unsigned int>>::iterator it
         = all_edges.begin();
     unsigned int tmp_prev = 0;
