@@ -67,4 +67,7 @@ if __name__ == "__main__":
   pl.xticks(np.arange(0, width+1, 1.0))
   pl.yticks(np.arange(0, height+1, 1.0))
 
+  for pt in pts:
+    pl.plot(*pt,marker="o",markersize=4,color="black")
+
   pl.show()
