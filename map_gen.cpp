@@ -73,11 +73,11 @@ map_t gen_map(
     indices.erase(indices.begin()+tmp_on);
     for (unsigned int i = num_pts - 1; i > 0; --i) {
         unsigned int path = tmp_mst_config % i;
-        unsigned int weight = tmp_weight_config % max_weight;
+        unsigned int weight = tmp_weight_config % max_weight + 1;
         unsigned int v = indices[path];
         indices.erase(indices.begin()+path);
-        connections[tmp_on].push_back({.to=v, .weight=weight});
-        connections[v].push_back({.to=tmp_on, .weight=weight});
+        connections[tmp_on].push_back({.to=v,.weight=weight});
+        connections[v].push_back({.to=tmp_on,.weight=weight});
         all_edges.erase(std::make_pair(v, tmp_on));
         all_edges.erase(std::make_pair(tmp_on, v));
         tmp_mst_config /= i;
@@ -96,15 +96,15 @@ map_t gen_map(
         = all_edges.begin();
     unsigned int tmp_prev = 0;
     for (int i = num_edges - num_pts; i >= 0; --i) {
-        unsigned int weight = tmp_weight_config % max_weight;
+        unsigned int weight = tmp_weight_config % max_weight + 1;
         for (unsigned int j = 0; j < tmp_edges[i] - tmp_prev; ++j) {
             it++;
         }
         tmp_prev = tmp_edges[i];
         unsigned int v1 = (*it).first;
         unsigned int v2 = (*it).second;
-        connections[v1].push_back({.to=v2, .weight=weight});
-        connections[v2].push_back({.to=v1, .weight=weight});
+        connections[v1].push_back({.to=v2,.weight=weight});
+        connections[v2].push_back({.to=v1,.weight=weight});
         tmp_weight_config /= max_weight;
     }
 
