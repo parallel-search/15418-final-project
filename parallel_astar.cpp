@@ -1,11 +1,11 @@
-#include "parallel_hash.h"
-#include "heap.h"
+#include "hash_with_replacement/parallel_hash.h"
 
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
 
 template <typename T>
 struct link {
@@ -101,10 +101,9 @@ std::vector<int> parallel_astar(
     HashTable *closed_set = create_hash_table(20);
 
     // Initialize data structures
-    push_heap(open_set[0], start, f(start));
     Node begin = Node(start, 0, f(start));
     Node init_node_list[] = {begin};
-    insert_deduplicate(hash_table, init_node_list, 1);
+    insert_deduplicate(closed_set, init_node_list, 1, open_set);
 
     int m = -1;
 
@@ -120,9 +119,9 @@ std::vector<int> parallel_astar(
 
         // for loop in parallel
         for (int i = 0; i < num_queues; i++) {
-            if (is_empty_heap(open_set)) continue;
+            if (is_empty_heap(open_set[i])) continue;
 
-            element<T>* q = peak_heap(open_set[i]);
+            element<int>* q = peak_heap(open_set[i]);
             pop_heap(open_set[i]);
             int node = q->value;
             if (is_goal(node)) {
@@ -149,7 +148,7 @@ std::vector<int> parallel_astar(
             for (int i = 0; i < num_queues; i++) {
                 if (is_empty_heap(open_set[i])) continue;
 
-                int min_cost = peak_heap(open_set[i]).priority;
+                int min_cost = peak_heap(open_set[i])->priority;
                 if (f(m) < min_cost) {
                     all_less = false;
                     break;
@@ -162,7 +161,7 @@ std::vector<int> parallel_astar(
                 int curr = m;
                 while (curr != start) {
                     backtrack_path.push_back(curr);
-                    curr = query(closed_set, curr).prev;
+                    curr = query(closed_set, curr).prev_id;
                 }
                 backtrack_path.push_back(start);
 
@@ -176,11 +175,11 @@ std::vector<int> parallel_astar(
         int num_left = S.size();
         // run in parallel
         for (int i = 0; i < S.size(); i++) {
-            query_mask[i] = query_cost_check(open_set, S[i]);
+            query_mask[i] = query_cost_check(closed_set, S[i]);
             if (!query_mask[i]) num_left--;
         }
 
-        Node T[num_left];
+        Node *T = (Node *) malloc(num_left * sizeof(Node));
         int j = 0;
         for (int i = 0; i < S.size(); i++) {
             if (query_mask[i]) {
@@ -192,7 +191,7 @@ std::vector<int> parallel_astar(
 
         // insert the remaining nodes in parallel in closed array
         // and priority queues.
-        insert_deduplicate(closed_set, T, num_left, &open_set);
+        insert_deduplicate(closed_set, T, num_left, open_set);
 
         bool all_empty = false;
         // we can parallelize this
@@ -202,4 +201,29 @@ std::vector<int> parallel_astar(
     }
 
     return {};
+}
+
+bool is_goal(int node) {
+    return node == 10;
+}
+
+std::vector<link<int>> get_next(int node) {
+    std::vector<link<int>> neighbors;
+    neighbors.push_back(link<int>(node + 1, node));
+    return neighbors;
+}
+
+double heuristic(int node) {
+    return 10 - node;
+}
+
+void test2() {
+    std::vector<int> start = {0, 1};
+
+    astar(start, is_goal, get_next, heuristic);
+}
+
+int main() {
+    test2();
+    return 0;
 }
