@@ -71,11 +71,10 @@ std::vector<T> astar(
 
     // If open_set is empty, then failed to find goal state
     while (!is_empty_heap(open_set)) {
-        element<T>* q = peak_heap(open_set);
+        element<T> q = peak_heap(open_set)[0];
         pop_heap(open_set);
-        T node = q->value;
-        printf("Opened node %d\n", node);
-        if (visited[node].cost < q->priority - heuristic(node)) continue;
+        T node = q.value;
+        if (visited[node].cost < q.priority - heuristic(node)) continue;
         if (is_goal(node)) {
             std::vector<T> path(visited[node].length);
             T on = node;
@@ -124,13 +123,13 @@ std::vector<int> parallel_astar(
     int m = -1;
 
     // If all queues are empty, then failed to find goal state
-    bool all_empty = false;
+    bool all_empty = true;
     // we can parallelize this
     for (int i = 0; i < num_queues; i++) {
-        all_empty = all_empty || is_empty_heap(open_set[i]);
+        all_empty = all_empty && is_empty_heap(open_set[i]);
     }
 
-    int cntr = 0;
+    // int cntr = 0;
     while (!all_empty) {
         std::vector<Node> S;
 
@@ -140,12 +139,12 @@ std::vector<int> parallel_astar(
 
             if (is_empty_heap(open_set[i])) continue;
 
-            element<int>* q = peak_heap(open_set[i]);
-            printf("q: %d\n", q->value);
+            element<int> q = peak_heap(open_set[i])[0];
+            printf("q: %d\n", q.value);
             pop_heap(open_set[i]);
-            int node = q->value;
+            int node = q.value;
             if (is_goal(node)) {
-                printf("reached a goal state!");
+                printf("reached a goal state!\n");
                 if (m == -1 || f(node) < f(m)) {
                     m = node;
                 }
@@ -155,7 +154,6 @@ std::vector<int> parallel_astar(
             for (link<int> neighbor : get_next(node)) {
                 assert(query(closed_set, node).g != -1);
                 int cost = query(closed_set, node).g + neighbor.cost;
-                printf("neighbor.node: %d\n", neighbor.node);
                 Node new_node = Node(neighbor.node, node, cost, f(neighbor.node));
                 S.push_back(new_node);
             }
@@ -216,14 +214,14 @@ std::vector<int> parallel_astar(
         // and priority queues.
         insert_deduplicate(closed_set, T, num_left, open_set);
 
-        bool all_empty = false;
+        bool all_empty = true;
         // we can parallelize this
         for (int i = 0; i < num_queues; i++) {
-            all_empty = all_empty || is_empty_heap(open_set[i]);
+            all_empty = all_empty && is_empty_heap(open_set[i]);
         }
 
-        cntr++;
-        if (cntr > 5) throw "end early";
+        // cntr++;
+        // if (cntr > 5) throw "end early";
         printf("-----NEW ITERATION-----\n");
     }
 
@@ -256,7 +254,7 @@ void test_seq() {
 
 void test_par() {
     int start = 0;
-    int num_queues = 1;
+    int num_queues = 5;
     std::vector<int> ans = parallel_astar(start, is_goal, get_next, heuristic, num_queues);
     for (auto elem : ans) {
         printf("%d ", elem);
@@ -265,6 +263,6 @@ void test_par() {
 }
 
 int main() {
-    test_seq();
+    test_par();
     return 0;
 }
