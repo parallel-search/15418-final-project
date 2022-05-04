@@ -1,10 +1,10 @@
 #include <cstdlib>
 
-struct slider_state {
+typedef struct slider_state {
     char board[16];
     char free_r;
     char free_c;
-};
+} slider_state_t;
 
 
 
