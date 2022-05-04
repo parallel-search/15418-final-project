@@ -5,4 +5,4 @@ APP_NAME=parallel_astar
 OBJDIR=objs
 
 default:
-		$(CXX) $(CXXFLAGS) -o $(APP_NAME) *.cpp *.h
+		$(CXX) $(CXXFLAGS) -o $(APP_NAME) parallel/parallel_main.cpp *.h
