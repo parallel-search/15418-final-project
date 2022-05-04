@@ -1,15 +1,15 @@
 #include "astar.h"
 
-void print_heap(heap<int>* pq) {
+void print_heap(heap* pq) {
     printf("pq: ");
-    for (int i = 0; i < pq->num_elements; ++i) {
+    for (unsigned int i = 0; i < pq->num_elements; ++i) {
         printf("%d, ", pq->data[i].value);
     }
     printf("\n");
 }
 
 void test1() {
-    heap<int>* a = new_heap<int>(2);
+    heap* a = new_heap(2);
     int ints[] = {0,1,2,3,4,5,6,7,8,9};
     print_heap(a);
     pop_heap(a);
@@ -62,9 +62,9 @@ bool is_goal(int node) {
     return node == 10;
 }
 
-std::vector<link<int>> get_next(int node) {
-    std::vector<link<int>> neighbors;
-    neighbors.push_back(link<int>(node + 1, node));
+std::vector<link> get_next(int node) {
+    std::vector<link> neighbors;
+    neighbors.push_back(link(node + 1, node));
     return neighbors;
 }
 
@@ -72,13 +72,15 @@ double heuristic(int node) {
     return 10 - node;
 }
 
+/*
 void test2() {
     std::vector<int> start = {0, 1};
 
     astar(start, is_goal, get_next, heuristic);
 }
+*/
 
 int main() {
-    test2();
+    test1();
     return 0;
 }
