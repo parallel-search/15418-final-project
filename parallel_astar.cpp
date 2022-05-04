@@ -1,4 +1,5 @@
 #include "hash_with_replacement/parallel_hash.h"
+#include <assert.h>
 
 #include <iostream>
 #include <limits>
@@ -6,6 +7,22 @@
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
+
+void print_heap(heap<int>* pq, int id) {
+    printf("pq %d: ", id);
+    for (int i = 0; i < pq->num_elements; ++i) {
+        printf("%d, ", pq->data[i].value);
+    }
+    printf("\n");
+}
+
+void print_node_vector(std::vector<Node> S) {
+    printf("S: ");
+    for (Node n : S) {
+        printf("%d ", n.id);
+    }
+    printf("\n");
+}
 
 template <typename T>
 struct link {
@@ -37,7 +54,7 @@ struct path_link {
 
 template <typename T>
 std::vector<T> astar(
-    std::vector<T> start,
+    T start,
     bool (*is_goal)(T),
     std::vector<link<T>> (*get_next)(T),
     double (*heuristic)(T)
@@ -49,16 +66,15 @@ std::vector<T> astar(
     std::unordered_map<T, path_link<T>> visited;
 
     // Initialize data structures
-    for (T elem: start) {
-        push_heap(open_set, elem, heuristic(elem));
-        visited[elem] = path_link<T>();
-    }
+    push_heap(open_set, start, heuristic(start));
+    visited[start] = path_link<T>();
 
     // If open_set is empty, then failed to find goal state
     while (!is_empty_heap(open_set)) {
         element<T>* q = peak_heap(open_set);
         pop_heap(open_set);
         T node = q->value;
+        printf("Opened node %d\n", node);
         if (visited[node].cost < q->priority - heuristic(node)) continue;
         if (is_goal(node)) {
             std::vector<T> path(visited[node].length);
@@ -85,7 +101,7 @@ std::vector<int> parallel_astar(
     int start,
     bool (*is_goal)(int),
     std::vector<link<int>> (*get_next)(int),
-    int (*f)(int), // f is not heuristic -- it is heuristic + g
+    double (*f)(int), // f is not heuristic -- it is heuristic + g
     int num_queues
 ) {
     if (num_queues < 1) {
@@ -114,17 +130,22 @@ std::vector<int> parallel_astar(
         all_empty = all_empty || is_empty_heap(open_set[i]);
     }
 
+    int cntr = 0;
     while (!all_empty) {
         std::vector<Node> S;
 
         // for loop in parallel
         for (int i = 0; i < num_queues; i++) {
+            print_heap(open_set[i], i);
+
             if (is_empty_heap(open_set[i])) continue;
 
             element<int>* q = peak_heap(open_set[i]);
+            printf("q: %d\n", q->value);
             pop_heap(open_set[i]);
             int node = q->value;
             if (is_goal(node)) {
+                printf("reached a goal state!");
                 if (m == -1 || f(node) < f(m)) {
                     m = node;
                 }
@@ -132,13 +153,15 @@ std::vector<int> parallel_astar(
             }
 
             for (link<int> neighbor : get_next(node)) {
-                // assert query(closed_set, node).g != -1;
+                assert(query(closed_set, node).g != -1);
                 int cost = query(closed_set, node).g + neighbor.cost;
+                printf("neighbor.node: %d\n", neighbor.node);
                 Node new_node = Node(neighbor.node, node, cost, f(neighbor.node));
                 S.push_back(new_node);
             }
         }
 
+        print_node_vector(S);
 
         // return best path if goal is found and there is no
         // element in any of the pq's that are less than current
@@ -198,6 +221,10 @@ std::vector<int> parallel_astar(
         for (int i = 0; i < num_queues; i++) {
             all_empty = all_empty || is_empty_heap(open_set[i]);
         }
+
+        cntr++;
+        if (cntr > 5) throw "end early";
+        printf("-----NEW ITERATION-----\n");
     }
 
     return {};
@@ -217,13 +244,27 @@ double heuristic(int node) {
     return 10 - node;
 }
 
-void test2() {
-    std::vector<int> start = {0, 1};
+void test_seq() {
+    int start = 0;
 
-    astar(start, is_goal, get_next, heuristic);
+    std::vector<int> ans = astar(start, is_goal, get_next, heuristic);
+    for (auto elem : ans) {
+        printf("%d ", elem);
+    }
+    printf("\n");
+}
+
+void test_par() {
+    int start = 0;
+    int num_queues = 1;
+    std::vector<int> ans = parallel_astar(start, is_goal, get_next, heuristic, num_queues);
+    for (auto elem : ans) {
+        printf("%d ", elem);
+    }
+    printf("\n");
 }
 
 int main() {
-    test2();
+    test_seq();
     return 0;
 }
