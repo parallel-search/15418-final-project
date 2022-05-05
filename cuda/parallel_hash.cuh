@@ -28,13 +28,25 @@ struct HashTable {
     Node *table;
 };
 
-__device__ inline int hash_fn1(int key, int size) {
+unsigned long slider_hash(slider_state_t state) {
+    unsigned long hash = 0;
+    unsigned long base = 1;
+    for (unsigned char i = 0; i < DIM_X * DIM_Y; ++i) {
+        hash += state.board[i] * base;
+        base *= DIM_X * DIM_Y;
+    }
+    return hash;
+}
+
+__device__ inline int hash_fn1(int slide_key, int size) {
     // can modify this later
+    unsigned long key = slider_hash(slide_key);
     return key % size;
 }
 
-__device__ inline int hash_fn2(int key, int size) {
+__device__ inline int hash_fn2(int slide_key, int size) {
     // can modify this later
+    unsigned long key = slider_hash(slide_key);
     return 1 + (key % (size - 1));
 }
 
@@ -44,6 +56,8 @@ __device__ inline HashTable *create_hash_table(int size) {
     hash_table->num_elems = 0;
     hash_table->table = (Node *) malloc(sizeof(Node) * size);
     for (int i = 0; i < size; i++) {
+        slider_state_t new_state;
+        new_state.zero_idx = DIM_X * DIM_Y;
         hash_table->table[i] = Node(-1, -1, -1);
     }
     return hash_table;

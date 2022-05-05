@@ -1,8 +1,9 @@
 #include <cstdlib>
+#include "slider.h"
 
 struct element {
     double priority;
-    int value;
+    slider_state_t value;
 };
 
 struct heap {
@@ -18,7 +19,7 @@ __device__ inline heap* new_heap(int size=16) {
     return pq;
 }
 
-__device__ inline void push_heap(heap* pq, int value, double priority) {
+__device__ inline void push_heap(heap* pq, slider_state_t value, double priority) {
     // Resize vector
     if (pq->size == pq->num_elements) {
         int new_size = pq->size * 2;

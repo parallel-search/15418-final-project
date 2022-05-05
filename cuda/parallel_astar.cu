@@ -7,32 +7,71 @@
 #include "CycleTimer.h"
 #include "parallel_hash.cuh"
 
-__device__ inline bool is_goal(int node) {
-    return node == 10;
-}
-
-__device__ inline link* get_next(int node) {
-    int length = 1;
-    if (node > 0) {
-        length = 2;
+struct link {
+    slider_state_t node;
+    double cost;
+    link() {
+        slider_state_t node;
+        node.zero_idx = DIM_X * DIM_Y;
+        link(node, 0);
     }
-    link neighbors[length];
-    neighbors[0] = link(node+1, node+1);
-    if (node > 0) {
-        neighbors[1] = link(node-1, node);
+    link(slider_state_t node, double cost) {
+        this->node = node;
+        this->cost = cost;
     }
-    return neighbors;
+};
+
+__device__ inline bool is_goal(slider_state_t node) {
+    for (unsigned char i = 0; i < DIM_X * DIM_Y; ++i) {
+        if (node.board[i] != i) return false;
+    }
+
+    return true;
 }
 
-__device__ inline double heuristic(int node) {
-    return 10 - node;
+__device__ inline link* get_next(slider_state_t node) {
+    for (unsigned char move = UP; move <= RIGHT; ++move) {
+        slider_state_t next_state = state;
+        unsigned char new_zero;
+        switch (move) {
+            case DOWN:
+                if (state.zero_idx < DIM_X) continue;
+                new_zero = state.zero_idx - DIM_X;
+                break;
+            case UP:
+                if (state.zero_idx >= DIM_X * DIM_Y - DIM_X) continue;
+                new_zero = state.zero_idx + DIM_X;
+                break;
+            case RIGHT:
+                if (state.zero_idx % DIM_X == 0) continue;
+                new_zero = state.zero_idx - 1;
+                break;
+            case LEFT:
+                if (state.zero_idx % DIM_X == DIM_X - 1) continue;
+                new_zero = state.zero_idx + 1;
+                break;
+        }
+        next_state.board[state.zero_idx] = next_state.board[new_zero];
+        next_state.board[new_zero] = 0;
+        next_state.zero_idx = new_zero;
+
+        unsigned short cost = visited[state].cost + 1;
+}
+
+__device__ inline double heuristic(slider_state_t node) {
+    return 0;
 }
 
 
-___global___ uarray* parallel_astar_kernel(
-    int start,
+__global__ void parallel_astar_kernel(
+    slider_state_t start,
     int num_queues,
-    int hash_table_size
+    HashTable *closed_set, 
+    Node *S, 
+    Node *goal_state, 
+    int *best_cost,
+    bool *all_queue_empty,
+    bool *min_goal_reached
 ) {
     if (num_queues < 1) {
         throw "We need at least one priority queue";
@@ -43,15 +82,8 @@ ___global___ uarray* parallel_astar_kernel(
     // Priority queue based on cost plus heuristic
     heap* pq = new_heap();
 
-    // Hashmap for explored vertices (hashmap size should be dependent on number of nodes)
-    __shared__ HashTable *closed_set = create_hash_table(hash_table_size);
-
     // Array S for the neighbors of the nodes on the frontier (to be deduplicated)
-    const uint neighbors_size = 4 * num_queues
-    __shared__ Node S[neighbors_size];
-
-    // Array T for the elements of S post deduplication
-    __shared__ Node T[neighbors_size];
+    const uint neighbors_size = 4 * num_queues;
 
     // Initialize data structures
     Node begin = Node(start, 0, heuristic(start));
@@ -60,37 +92,50 @@ ___global___ uarray* parallel_astar_kernel(
         insert_deduplicate(closed_set, init_node_list, 1, pq);
     }
 
-    // for storing the best nodes that reach the final state
-    __shared__ int m = -1;
-    __shared__ int fm = -1;
-
     // If all queues are empty, then failed to find goal state
-    __shared__ bool all_empty = true;
-    all_empty = all_empty && is_empty_heap(pq); // TODO: should this be ATOMIC (?)
+    atomicAnd(all_queue_empty, is_empty_heap(pq));
     __syncthreads();
 
-    while (!all_empty) {
+    while (!(*all_queue_empty)) {
         if (!is_empty_heap(open_set[i])) {
             element q = peak_heap(pq)[0];
             pop_heap(pq);
-            int node = q.value;
+            slider_state_t node = q.value;
             if (is_goal(node)) {
                 printf("reached a goal state!\n");
-                // ATOMIC REGION (?)
                 int fnode = q.priority;
-                if (m == -1 || fnode < fm) {
-                    m = node;
-                    fm = fnode;
-                }
-                // END ATOMIC REGION (?)
+                atomicMin(best_cost, fnode);
             } else {
                 int cntr = 0;
-                for (link neighbor : get_next(node)) {
-                    assert(query(closed_set, node).g != -1);
-                    
-                    int cost = query(closed_set, node).g + neighbor.cost;
-                    Node new_node = Node(neighbor.node, node, cost, cost+heuristic(neighbor.node));
-                    
+
+                for (unsigned char move = UP; move <= RIGHT; ++move) {
+                    unsigned short cost = query(closed_set, node).g + 1;
+
+                    slider_state_t next_state = node;
+                    unsigned char new_zero;
+                    switch (move) {
+                        case DOWN:
+                            if (state.zero_idx < DIM_X) continue;
+                            new_zero = state.zero_idx - DIM_X;
+                            break;
+                        case UP:
+                            if (state.zero_idx >= DIM_X * DIM_Y - DIM_X) continue;
+                            new_zero = state.zero_idx + DIM_X;
+                            break;
+                        case RIGHT:
+                            if (state.zero_idx % DIM_X == 0) continue;
+                            new_zero = state.zero_idx - 1;
+                            break;
+                        case LEFT:
+                            if (state.zero_idx % DIM_X == DIM_X - 1) continue;
+                            new_zero = state.zero_idx + 1;
+                            break;
+                    }
+                    next_state.board[state.zero_idx] = next_state.board[new_zero];
+                    next_state.board[new_zero] = 0;
+                    next_state.zero_idx = new_zero;
+
+                    Node new_node = Node(next_state, move, node, cost, cost+heuristic(next_state));
                     S[4 * thread_idx + cntr] = new_node;
                     cntr++;
                 }
@@ -100,26 +145,25 @@ ___global___ uarray* parallel_astar_kernel(
         // return best path if goal is found and there is no
         // element in any of the pq's that are less than current
         // path to goal.
-        if (m != -1) {
-            printf("f(m): %d\n", fm);
-
-            __shared__ bool all_less = true;
+        *min_goal_reached = true;
+        __syncthreads();
+        if (*best_cost != UINT32_MAX) {
             for (int i = 0; i < 4; i++) {
                 Node n = S[i * num_queues + thread_idx];
                 // unpopulated entry
                 if (n.id.zero_idx == DIM_X * DIM_Y) continue;
 
-                if (n.f < fm) {
-                    all_less = false;
-                    break;
-                }
+                atomicAnd(min_goal_reached, n.f >= *best_cost);
             }
 
             if (!is_empty_heap(pq) && peak_heap(pq)[0].priority < fm) {
-                all_less = false;
+                atomicAnd(min_goal_reached, peak_heap(pq).priority >= *best_cost);
             }
 
+            __syncthreads();
             if (all_less) {
+                
+                /*
                 // return path of actions to goal
                 uarray* backtrack_path = new_uarray(num_queues);
                 int curr = m;
@@ -130,6 +174,7 @@ ___global___ uarray* parallel_astar_kernel(
 
                 reverse_uarray(backtrack_path);
                 return backtrack_path;
+                */
             }
         }
 
@@ -143,35 +188,57 @@ ___global___ uarray* parallel_astar_kernel(
         // and priority queues.
         insert_deduplicate(closed_set, T, num_left, open_set);
 
-        bool all_empty = true;
-        // we can parallelize this
-        for (int i = 0; i < num_queues; i++) {
-            all_empty = all_empty && is_empty_heap(open_set[i]);
-        }
+        *all_queue_empty = true;
+        __syncthreads();
+        atomicAnd(all_queue_empty, is_empty_heap(pq));
+        __syncthreads();
     }
-
-    return new_uarray(num_queues);
 }
 
-void cuda_astar(int start, int num_queues, int hash_table_size) {
+void cuda_astar(slider_state_t start, int num_queues, int hash_table_size) {
     // Compute number of blocks and threads per block
     // We use one thread per priority queue
     const int threadsPerBlock = 256;
     const int blocks = (num_queues + threadsPerBlock - 1) / threadsPerBlock;
 
-    // heap<int>** device_open_set;
-    // HashTable* device_closed_set;
-    // Node* device_table;
+    // HashTable* closed_set = create_hash_table(hash_table_size);
+    Node S[4 * num_queues];
+    Node *goal_state = NULL;
+    int best_cost = UINT32_MAX;
 
-    // cudaMalloc((void **) &device_open_set, sizeof(heap<int>*) * num_queues);
-    // cudaMalloc((void **) &device_closed_set, sizeof(HashTable));
-    // cudaMalloc((void **) &device_table, sizeof(Node) * hash_table_size);
+    HashTable* device_closed_set;
+    Node* device_table;
+    Node* device_S;
+    Node* device_goal_state;
+    int* device_best_cost;
+    bool* device_all_queue_empty;
+    bool* device_min_goal_reached;
+
+    cudaMalloc((void **) &device_closed_set, sizeof(HashTable));
+    cudaMalloc((void **) &device_table, sizeof(Node) * hash_table_size);
+    cudaMalloc((void **) &device_S, sizeof(Node) * 4 * num_queues);
+    cudaMalloc((void **) &device_goal_state, sizeof(Node));
+    cudaMalloc((void **) &device_best_cost, sizeof(int));
+    cudaMalloc((void **), &device_all_queue_empty, sizeof(bool));
+    cudaMalloc((void **), &device_min_goal_reached, sizeof(bool));
+
+    // cudaMemcpy(device_closed_set, closed_set, sizeof(HashTable), cudaMemcpyHostToDevice);
+    device_closed_set = create_hash_table(hash_table_size)
+    // cudaMemcpy(device_table, closed_set->table, sizeof(Node) * hash_table_size, cudaMemcpyHostToDevice);
+    device_table = device_closed_set->table;
+    cudaMemcpy(device_S, S, sizeof(Node) * 4 * num_queues, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_goal_state, goal_state, sizeof(Node), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_best_cost, &best_cost, sizeof(int), cudaMemcpyHostToDevice);
+    *device_all_queue_empty = true;
+    *device_min_goal_reached = true;
 
     double kernelStartTime = CycleTimer::currentSeconds();
-    parallel_astar_kernel<<<blocks, threadsPerBlock>>>(start, num_queues, hash_table_size);
+    parallel_astar_kernel<<<blocks, threadsPerBlock>>>(start, num_queues, device_closed_set, device_S, device_goal_state, device_best_cost, device_all_queue_empty, device_min_goal_reached);
     cudaDeviceSynchronize();
 
     double kernelEndTime = CycleTimer::currentSeconds();
+
+    // determine the actions using goal_state here
 
     double kernelOverallDuration = kernelEndTime - kernelStartTime;
 
