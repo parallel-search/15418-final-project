@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "slider.h"
+#include "slider.cuh"
 
 struct element {
     double priority;

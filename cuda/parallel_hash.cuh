@@ -10,12 +10,16 @@ struct Node {
     slider_state_t prev_id;
     int g;
     int f;
+    Node() {
+        slider_state_t def = slider_state_t();
+        Node(def, -1, id, -1, -1);
+    }
     Node(slider_state_t id, int g, int f) {
         Node(id, -1, id, g, f);
     }
     Node(slider_state_t id, int prev_action, slider_state_t prev_id, int g, int f) {
         this->id = id;
-        this->prev_action = prev_action
+        this->prev_action = prev_action;
         this->prev_id = prev_id;
         this->g = g;
         this->f = f;
@@ -56,9 +60,8 @@ __device__ inline HashTable *create_hash_table(int size) {
     hash_table->num_elems = 0;
     hash_table->table = (Node *) malloc(sizeof(Node) * size);
     for (int i = 0; i < size; i++) {
-        slider_state_t new_state;
-        new_state.zero_idx = DIM_X * DIM_Y;
-        hash_table->table[i] = Node(-1, -1, -1);
+        slider_state_t new_state = slider_state();
+        hash_table->table[i] = Node(new_state, -1, -1);
     }
     return hash_table;
 }
@@ -85,17 +88,17 @@ __device__ inline bool query_cost_check(HashTable *hash_table, Node node) {
 }
 
 // returns Node corresponding to id
-__device__ inline Node query(HashTable *hash_table, int id) {
-    int ind0 = hash_fn1(id, hash_table->size);
-    int ind1 = hash_fn2(id, hash_table->size);
+__device__ inline Node query(HashTable *hash_table, slider_state_t node) {
+    int ind0 = hash_fn1(node, hash_table->size);
+    int ind1 = hash_fn2(node, hash_table->size);
 
-    if (hash_table->table[ind0].id == id) {
+    if (hash_table->table[ind0].id == node) {
         return hash_table->table[ind0];
-    } else if (hash_table->table[ind1].id == id) {
+    } else if (hash_table->table[ind1].id == node) {
         return hash_table->table[ind1];
     } else {
         // indicate node does not exist
-        return Node(-1, -1, -1);
+        return Node(slider_state(), -1, -1);
     }
 }
 
@@ -122,9 +125,9 @@ __device__ inline Node* insert_deduplicate(HashTable *hash_table, Node *node_lis
         int ind0 = hash_fn1(node_list[i].id, hash_table->size);
         int ind1 = hash_fn2(node_list[i].id, hash_table->size);
 
-        if (hash_table->table[ind0].id == node_list[i].id || hash_table->table[ind0].id == -1) {
+        if (hash_table->table[ind0].id == node_list[i].id || hash_table->table[ind0].id.zero_idx == DIM_X * DIM_Y) {
             z = 0;
-        } else if (hash_table->table[ind1].id == node_list[i].id || hash_table->table[ind1].id == -1) {
+        } else if (hash_table->table[ind1].id == node_list[i].id || hash_table->table[ind1].id.zero_idx == DIM_X * DIM_Y) {
             z = 1;
         }
 

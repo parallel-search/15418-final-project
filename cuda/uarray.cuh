@@ -48,6 +48,14 @@ void pop_uarray(uarray* arr) {
     }
 }
 
+void reverse_uarray(uarray* arr) {
+    for (unsigned int i = 0; i < arr->num_elements / 2; ++i) {
+        unsigned char tmp = arr->data[i]; 
+        arr->data[i] = arr->data[arr->num_elements - i - 1];
+        arr->data[arr->num_elements - i - 1] = tmp;
+    }
+}
+
 unsigned int size_uarray(uarray* arr) {
     return arr->num_elements;
 }
