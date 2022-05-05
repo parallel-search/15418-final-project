@@ -203,8 +203,6 @@ __global__ void parallel_astar_kernel(
             }
         }
 
-        // insert_deduplicate(closed_set, S, num_left, open_set);
-
         *all_queue_empty = true;
         __syncthreads();
         atomicAnd(all_queue_empty, is_empty_heap(pq));
