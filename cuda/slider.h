@@ -7,6 +7,13 @@ typedef struct slider_state {
     unsigned char board[DIM_X * DIM_Y];
     unsigned char zero_idx;
 
+    slider_state() {
+        for (int i = 0; i < DIM_X * DIM_Y; i++) {
+            this->board[i] = i; // goal board
+        }
+        this->zero_idx = DIM_X * DIM_Y; // invalid by default
+    }
+
     bool operator==(const slider_state& state) const {
         for (unsigned char i = 0; i < DIM_X * DIM_Y; ++i) {
             if (board[i] != state.board[i]) return false;

@@ -38,13 +38,13 @@ unsigned long slider_hash(slider_state_t state) {
     return hash;
 }
 
-__device__ inline int hash_fn1(int slide_key, int size) {
+__device__ inline int hash_fn1(slider_state_t slide_key, int size) {
     // can modify this later
     unsigned long key = slider_hash(slide_key);
     return key % size;
 }
 
-__device__ inline int hash_fn2(int slide_key, int size) {
+__device__ inline int hash_fn2(slider_state_t slide_key, int size) {
     // can modify this later
     unsigned long key = slider_hash(slide_key);
     return 1 + (key % (size - 1));

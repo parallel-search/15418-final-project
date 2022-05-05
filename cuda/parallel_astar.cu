@@ -68,7 +68,6 @@ __global__ void parallel_astar_kernel(
     int num_queues,
     HashTable *closed_set, 
     Node *S, 
-    Node *goal_state, 
     int *best_cost,
     bool *all_queue_empty,
     bool *min_goal_reached
@@ -162,19 +161,7 @@ __global__ void parallel_astar_kernel(
 
             __syncthreads();
             if (all_less) {
-                
-                /*
-                // return path of actions to goal
-                uarray* backtrack_path = new_uarray(num_queues);
-                int curr = m;
-                while (curr != start) {
-                    push_uarray(backtrack_path, query(closed_set, curr).prev_action);
-                    curr = query(closed_set, curr).prev_id;
-                }
-
-                reverse_uarray(backtrack_path);
-                return backtrack_path;
-                */
+                return;
             }
         }
 
@@ -182,11 +169,41 @@ __global__ void parallel_astar_kernel(
         // run in parallel
         for (size_t i = 0; i < 4; i++) {
             Node n = S[i * num_queues + thread_idx];
+            if (query_cost_check(closed_set, n)) {
+                S[i * num_queues + thread_idx].id.zero_idx = DIM_X * DIM_Y;
+            }
         }
+        __syncthreads();
 
         // insert the remaining nodes in parallel in closed array
         // and priority queues.
-        insert_deduplicate(closed_set, T, num_left, open_set);
+        for (int i = 0; i < 4; i++) {
+            Node n = S[i * num_queues + thread_idx];
+            if (n.id.zero_idx == DIM_X * DIM_Y) continue;
+
+            push_heap(pq, n.id, n.f);
+
+            int z = 0;
+            int ind0 = hash_fn1(n.id, closed_set->size);
+            int ind1 = hash_fn2(n.id, closed_set->size);
+
+            if (closed_set->table[ind0].id == node_list[i].id || closed_set->table[ind0].id == -1) {
+                z = 0;
+            } else if (closed_set->table[ind1].id == node_list[i].id || closed_set->table[ind1].id == -1) {
+                z = 1;
+            }
+
+            bool to_keep = query_cost_check(closed_set, n);
+            if (z == 0 && to_keep) {
+                Node old = atomicExch(closed_set->table[ind0], n);
+                n = old;
+            } else if (z == 1 && to_keep) {
+                Node old = atomicExch(closed_set->table[ind1], n);
+                n = old;    
+            }
+        }
+
+        // insert_deduplicate(closed_set, S, num_left, open_set);
 
         *all_queue_empty = true;
         __syncthreads();
@@ -203,13 +220,11 @@ void cuda_astar(slider_state_t start, int num_queues, int hash_table_size) {
 
     // HashTable* closed_set = create_hash_table(hash_table_size);
     Node S[4 * num_queues];
-    Node *goal_state = NULL;
     int best_cost = UINT32_MAX;
 
     HashTable* device_closed_set;
     Node* device_table;
     Node* device_S;
-    Node* device_goal_state;
     int* device_best_cost;
     bool* device_all_queue_empty;
     bool* device_min_goal_reached;
@@ -217,7 +232,6 @@ void cuda_astar(slider_state_t start, int num_queues, int hash_table_size) {
     cudaMalloc((void **) &device_closed_set, sizeof(HashTable));
     cudaMalloc((void **) &device_table, sizeof(Node) * hash_table_size);
     cudaMalloc((void **) &device_S, sizeof(Node) * 4 * num_queues);
-    cudaMalloc((void **) &device_goal_state, sizeof(Node));
     cudaMalloc((void **) &device_best_cost, sizeof(int));
     cudaMalloc((void **), &device_all_queue_empty, sizeof(bool));
     cudaMalloc((void **), &device_min_goal_reached, sizeof(bool));
@@ -227,18 +241,30 @@ void cuda_astar(slider_state_t start, int num_queues, int hash_table_size) {
     // cudaMemcpy(device_table, closed_set->table, sizeof(Node) * hash_table_size, cudaMemcpyHostToDevice);
     device_table = device_closed_set->table;
     cudaMemcpy(device_S, S, sizeof(Node) * 4 * num_queues, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_goal_state, goal_state, sizeof(Node), cudaMemcpyHostToDevice);
     cudaMemcpy(device_best_cost, &best_cost, sizeof(int), cudaMemcpyHostToDevice);
     *device_all_queue_empty = true;
     *device_min_goal_reached = true;
 
     double kernelStartTime = CycleTimer::currentSeconds();
-    parallel_astar_kernel<<<blocks, threadsPerBlock>>>(start, num_queues, device_closed_set, device_S, device_goal_state, device_best_cost, device_all_queue_empty, device_min_goal_reached);
+    parallel_astar_kernel<<<blocks, threadsPerBlock>>>(start, num_queues, device_closed_set, device_S, device_best_cost, device_all_queue_empty, device_min_goal_reached);
     cudaDeviceSynchronize();
 
     double kernelEndTime = CycleTimer::currentSeconds();
 
     // determine the actions using goal_state here
+    uarray* backtrack_path = new_uarray(num_queues);
+    slider_state_t curr;
+    for (int i = 0; i < DIM_X * DIM_Y; i++) {
+        curr.board[i] = i;
+    }
+    curr.zero_idx = 0;
+    while (curr != start) {
+        Node curr_node = query(closed_set, curr);
+        push_uarray(backtrack_path, curr_node.prev_action);
+        curr = curr_node.prev_id;
+    }
+
+    reverse_uarray(backtrack_path);
 
     double kernelOverallDuration = kernelEndTime - kernelStartTime;
 
