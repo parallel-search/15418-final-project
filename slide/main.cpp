@@ -1,4 +1,4 @@
-#include "slider.h"
+#include "astar.h"
 
 #include <stdexcept>
 
@@ -19,4 +19,11 @@ int main(int argc, char** argv) {
         if (cur_num == 0) init_state.zero_idx = on;
         ++on;
     }
+
+    uarray* path = astar(init_state);
+    for (unsigned int i = 0; i < path->num_elements; ++i) {
+        printf("%d ", get_uarray(path, i));
+    }
+
+    free_uarray(path);
 }

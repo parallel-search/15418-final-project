@@ -1,5 +1,7 @@
-#define DIM_X 4
-#define DIM_Y 4
+#define DIM_X 2
+#define DIM_Y 2
+
+#include <stdio.h>
 
 typedef struct slider_state {
     unsigned char board[DIM_X * DIM_Y];
@@ -21,3 +23,5 @@ typedef struct slider_hash {
         return hash;
     }
 } slider_hash_t;
+
+void print_slider(slider_state_t state);

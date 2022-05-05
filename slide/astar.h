@@ -1,11 +1,7 @@
 #include "heap.h"
 #include "uarray.h"
 
-#include <iostream>
-#include <limits>
-#include <stdexcept>
 #include <unordered_map>
-#include <vector>
 
 const unsigned char DONE = 0;
 const unsigned char UP = 1;

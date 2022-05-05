@@ -28,6 +28,7 @@ uarray* astar(slider_state_t init_state) {
     while (!is_empty_heap(open_set)) {
         element* q = peak_heap(open_set);
         slider_state_t state = q->value;
+        print_slider(state);
         unsigned short priority = q->priority;
         pop_heap(open_set);
         unsigned short heuristic = 0;
@@ -43,7 +44,7 @@ uarray* astar(slider_state_t init_state) {
                 heuristic += big_r - small_r + big_c - small_c;
             }
         }
-        if (visited[state].cost < priority - heuristic) continue;
+        if (visited.find(state) != visited.end() && visited[state].cost < priority - heuristic) continue;
         if (heuristic == 0) {
             uarray* path = new_uarray();
             slider_state_t on = state;

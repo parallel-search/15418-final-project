@@ -17,4 +17,4 @@ void reverse_uarray(uarray* arr);
 
 unsigned int size_uarray(uarray* arr);
 
-void free_heap(uarray* arr);
+void free_uarray(uarray* arr);
