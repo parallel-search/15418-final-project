@@ -8,7 +8,10 @@ typedef struct slider_state {
     unsigned char zero_idx;
 
     bool operator==(const slider_state& state) const {
-        return board == state.board;
+        for (unsigned char i = 0; i < DIM_X * DIM_Y; ++i) {
+            if (board[i] != state.board[i]) return false;
+        }
+        return true;
     }
 } slider_state_t;
 

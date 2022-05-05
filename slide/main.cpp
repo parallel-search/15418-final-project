@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
     for (unsigned int i = 0; i < path->num_elements; ++i) {
         printf("%d ", get_uarray(path, i));
     }
+    printf("\n");
 
     free_uarray(path);
 }
