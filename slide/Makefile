@@ -5,4 +5,4 @@ APP_NAME=slide_solver
 OBJDIR=objs
 
 map:
-		$(CXX) $(CXXFLAGS) -o $(APP_NAME) main.cpp
+		$(CXX) $(CXXFLAGS) -o $(APP_NAME) *.cpp *.h

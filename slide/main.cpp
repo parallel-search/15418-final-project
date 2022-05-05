@@ -16,10 +16,7 @@ int main(int argc, char** argv) {
     while(fscanf(fp, "%s ", cur) > 0) {
         cur_num = atoi(cur);
         init_state.board[on] = cur_num;
-        if (cur_num == 0) {
-            init_state.free_c = on % 4;
-            init_state.free_r = on / 4;
-        }
+        if (cur_num == 0) init_state.zero_idx = on;
         ++on;
     }
 }
