@@ -30,6 +30,7 @@ uarray* astar(slider_state_t init_state) {
         slider_state_t state = q->value;
 
         pop_heap(open_set);
+
         bool goal_state = true;
         for (unsigned char i = 0; i < DIM_X * DIM_Y; ++i) {
             if (state.board[i] != i) {
@@ -94,7 +95,7 @@ uarray* astar(slider_state_t init_state) {
             unsigned short cost = visited[state].cost + 1;
             if (visited.find(next_state) == visited.end() || visited[next_state].cost > cost) {
                 visited[next_state] = link(move, cost);
-
+                
                 unsigned short heuristic = 0;
                 for (unsigned char r = 0; r < DIM_Y; ++r) {
                     for (unsigned char c = 0; c < DIM_X; ++c) {

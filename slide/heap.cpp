@@ -39,7 +39,6 @@ void push_heap(heap* pq, slider_state_t value, unsigned short priority) {
 }
 
 void pop_heap(heap* pq) {
-    if (pq->num_elements == 0) return;
     --pq->num_elements;
 
     // Move last leaf to root
@@ -60,7 +59,7 @@ void pop_heap(heap* pq) {
         unsigned long next;
         if (right >= pq->num_elements || pq->data[left].priority < pq->data[right].priority)
             next = left;
-        else if (pq->data[left].priority > pq->data[right].priority)
+        else if (pq->data[left].priority >= pq->data[right].priority)
             next = right;
         else break;
         pq->data[idx] = pq->data[next];

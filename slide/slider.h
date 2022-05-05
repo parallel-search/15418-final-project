@@ -1,5 +1,5 @@
-#define DIM_X 2
-#define DIM_Y 2
+#define DIM_X 4
+#define DIM_Y 4
 
 #include <stdio.h>
 
