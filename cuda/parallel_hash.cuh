@@ -6,14 +6,16 @@
 
 struct Node {
     slider_state_t id;
+    int prev_action; // the action to get from prev_id to id
     slider_state_t prev_id;
     int g;
     int f;
-    Node(int id, int g, int f) {
-        Node(id, id, g, f);
+    Node(slider_state_t id, int g, int f) {
+        Node(id, -1, id, g, f);
     }
-    Node(int id, int prev_id, int g, int f) {
+    Node(slider_state_t id, int prev_action, slider_state_t prev_id, int g, int f) {
         this->id = id;
+        this->prev_action = prev_action
         this->prev_id = prev_id;
         this->g = g;
         this->f = f;

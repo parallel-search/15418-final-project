@@ -29,7 +29,7 @@ __device__ inline double heuristic(int node) {
 }
 
 
-___global___ std::vector<int> parallel_astar_kernel(
+___global___ uarray* parallel_astar_kernel(
     int start,
     int num_queues,
     int hash_table_size
@@ -47,10 +47,11 @@ ___global___ std::vector<int> parallel_astar_kernel(
     __shared__ HashTable *closed_set = create_hash_table(hash_table_size);
 
     // Array S for the neighbors of the nodes on the frontier (to be deduplicated)
-    __shared__ Node S[4 * num_queues];
+    const uint neighbors_size = 4 * num_queues
+    __shared__ Node S[neighbors_size];
 
     // Array T for the elements of S post deduplication
-    __shared__ Node T[4 * num_queues];
+    __shared__ Node T[neighbors_size];
 
     // Initialize data structures
     Node begin = Node(start, 0, heuristic(start));
@@ -118,38 +119,24 @@ ___global___ std::vector<int> parallel_astar_kernel(
                 all_less = false;
             }
 
-            // TODO: NEED TO PUSH ACTIONS NOT STATES - AUGMENT THE NODE STRUCT?
             if (all_less) {
-                // return path to goal
-                std::vector<int> backtrack_path;
+                // return path of actions to goal
+                uarray* backtrack_path = new_uarray(num_queues);
                 int curr = m;
                 while (curr != start) {
-                    backtrack_path.push_back(curr);
+                    push_uarray(backtrack_path, query(closed_set, curr).prev_action);
                     curr = query(closed_set, curr).prev_id;
                 }
-                backtrack_path.push_back(start);
 
-                std::reverse(backtrack_path.begin(), backtrack_path.end());
+                reverse_uarray(backtrack_path);
                 return backtrack_path;
             }
         }
 
         // deduplication section
-        __shared__ bool query_mask[4 * num_queues];
-        __shared__ int num_left = 4 * num_queues;
         // run in parallel
-        for (size_t i = 0; i < S.size(); i++) {
-            query_mask[i] = query_cost_check(closed_set, S[i]);
-            if (!query_mask[i]) num_left--;
-        }
-
-        __shared__ Node *T = (Node *) malloc(num_left * sizeof(Node));
-        int j = 0;
-        for (size_t i = 0; i < S.size(); i++) {
-            if (query_mask[i]) {
-                T[j] = S[i];
-                j++;
-            }
+        for (size_t i = 0; i < 4; i++) {
+            Node n = S[i * num_queues + thread_idx];
         }
 
         // insert the remaining nodes in parallel in closed array
@@ -163,7 +150,7 @@ ___global___ std::vector<int> parallel_astar_kernel(
         }
     }
 
-    return {};
+    return new_uarray(num_queues);
 }
 
 void cuda_astar(int start, int num_queues, int hash_table_size) {
