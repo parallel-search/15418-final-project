@@ -1,5 +1,14 @@
 # P* - Parallel A* (Aditya Kannan + Gabriel Lee)
 
+## Results
+
+See our report in `Report.pdf` and our 5-minute presentation at https://youtu.be/xjEV3PfbDI4!
+
+The structure of our code for the different implementations are as follows:
+- Serial A*: `sequential/`
+- Serial GA*: `parallel/`
+- CUDA GA*: `cuda/`
+
 ### Summary
 We are going to implement a parallel implementation of A* and analyze the performance of the algorithm on both systems. We plan to implement our algorithm on GPU using CUDA.
 
