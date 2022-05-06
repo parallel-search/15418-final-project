@@ -1,7 +1,7 @@
 # P* - Parallel A* (Aditya Kannan + Gabriel Lee)
 
 ### Summary
-We are going to implement a parallel implementation of A* and analyze the performance of the algorithm on both systems. We plan to implement our algorithm on both GPU and multi-core CPU platforms, for which we will use CUDA and OpenMP respectively.
+We are going to implement a parallel implementation of A* and analyze the performance of the algorithm on both systems. We plan to implement our algorithm on GPU using CUDA.
 
 ### Background
 A* is a single-source shortest path search algorithm used widely in AI and Robotics for graph search problems. It finds the fastest path in a (un)weighted (un)directed graph between two nodes and can therefore be useful for graph search and motion planning. With the right heuristic, A* has been proved to be a complete and optimal search algorithm.
@@ -23,7 +23,7 @@ Our 100% goal is to apply parallel A* to search applications, and measure speedu
 
 Our 125% goal is to expand our algorithmic domain to implement parallel Rapidly Random Trees (RRT), a widely used algorithm in Robotics [2].
 
-Our 75% goal is to have complete working version of parallel A*, although it might not be up to similar performance as the paper in [1]. For this goal, we would be able to implement it in either GPU or multi-core CPU, but perhaps not both.
+Our 75% goal is to have complete working version of parallel A*, although it might not be up to similar performance as the paper in [1]. For this goal, we would be able to implement it in the GPU.
 
 For demos, we could potentially visualize the A* search algorithm on various problems by showing the nodes that were expanded in the order that they were by different threads. We would be able to color code the nodes by the thread that expanded the node.
 
