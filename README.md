@@ -1,7 +1,7 @@
 # P* - Parallel A* (Aditya Kannan + Gabriel Lee)
 
 ### Summary
-We are going to implement a parallel implementation of A* and analyze the performance of the algorithm on both systems. We plan to implement our algorithm on both GPU and multi-core CPU platforms, for which we will use CUDA and OpenMP respectively.
+We are going to implement a parallel implementation of A* and analyze the performance of the algorithm on both systems. We plan to implement our algorithm on GPU using CUDA.
 
 ### Background
 A* is a single-source shortest path search algorithm used widely in AI and Robotics for graph search problems. It finds the fastest path in a (un)weighted (un)directed graph between two nodes and can therefore be useful for graph search and motion planning. With the right heuristic, A* has been proved to be a complete and optimal search algorithm.
@@ -23,7 +23,7 @@ Our 100% goal is to apply parallel A* to search applications, and measure speedu
 
 Our 125% goal is to expand our algorithmic domain to implement parallel Rapidly Random Trees (RRT), a widely used algorithm in Robotics [2].
 
-Our 75% goal is to have complete working version of parallel A*, although it might not be up to similar performance as the paper in [1]. For this goal, we would be able to implement it in either GPU or multi-core CPU, but perhaps not both.
+Our 75% goal is to have complete working version of parallel A*, although it might not be up to similar performance as the paper in [1]. For this goal, we would be able to implement it in the GPU.
 
 For demos, we could potentially visualize the A* search algorithm on various problems by showing the nodes that were expanded in the order that they were by different threads. We would be able to color code the nodes by the thread that expanded the node.
 
@@ -35,7 +35,7 @@ We will be using both GPU and multi-core CPU platforms for our project. We would
 **Week** | **Goal**
 --- | --- |
 3/27 - 4/2 | Implement Serial A* and Parallel A* as in [1]
-4/3 - 4/9 | Design CUDA/OpenMP version of Parallel A*
+4/3 - 4/9 | Design CUDA version of Parallel A*
 **4/11** | **Intermediate Checkpoint (Complete Milestone Report)**
 4/10 - 4/16 | Create tangible search problem and apply A* to it
 4/17 - 4/23 | Investigate optimizations and apply them to search problem
@@ -43,6 +43,16 @@ We will be using both GPU and multi-core CPU platforms for our project. We would
 **4/24 - 4/29** | **Final Report Due**
 5/1 - 5/5 | Prepare for Poster Session
 **5/5** | **Poster Session**
+
+### Milestone
+
+For the milestone, we've implemented a sequential A* with data structures reimplemented manually with the intention of easily porting them to CUDA code (_See Seq branch_). In particular, we've reimplemented unbounded arrays and heaps, all using sequential memory. We are currently in the process of creating a fast, shared hashmap implementation specific to parallel A* (for deduplication). This data structure is proving to be quite tricky, as it takes advantage of certain correctness attributes of A* in order to maximize parallelism (as described in [1]).
+
+With respect to the original proposal, we are slightly behind but not terribly so. While we haven't written the CUDA version for parallel A*, we have moved optimizations up and have been focusing on that. As mentioned before, we are working on the hashmap data structure. Alternatively, we could use a hashmap with mutex locks per change, but we felt that it was worth prioritizing such an optimization as it would be a major bottleneck.
+
+For the poster session, we plan to have a demo of the search, first sequentially then in parallel on a series of search problems, tentatively being path finding and puzzle solving.
+
+As of right now, we've spent a significant amount of time trying to fully understand the hashmap data structure in the paper. While not a concern yet, it is a bottleneck in our progress currently.
 
 ### References
 
